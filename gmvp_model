@@ -11,6 +11,8 @@ import statsmodels.api as sm
 from scipy.optimize import minimize
 import requests
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 # Specify key variables
 etf_url = 'https://investor.vanguard.com/etf/list#/etf/asset-class/month-end-returns'
@@ -26,26 +28,46 @@ all Vanguard ETFs. The resulting list vanguard_etfs contains the ticker symbols 
 ETFs as of the current date. Note that this list may change over time as new ETFs are added and
 old ones are retired.
 """
-html_content = requests.get(etf_url).text
-soup = BeautifulSoup(html_content, "html.parser")
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
 
-# Extract the table containing ETFs
-table = soup.find("table")
+try:
+    # Load the page using Selenium
+    with webdriver.Chrome(options=chrome_options) as driver:
+        driver.get(etf_url)
+        html_content = driver.page_source
 
-# Extract the rows from the table
-rows = table.tbody.find_all("tr")
+    soup = BeautifulSoup(html_content, "html.parser")
 
-# Create an empty list to store the ETFs
-vanguard_etfs = []
+    # Extract the table containing ETFs
+    table = soup.find("table")
+    
+    if table is None:
+        raise ValueError("No table element found on page.")
 
-# Loop through the rows and extract the ETF ticker symbol
-for row in rows:
-    columns = row.find_all("td")
-    ticker = columns[0].text.strip()
-    vanguard_etfs.append(ticker)
+    # Extract the rows from the table
+    rows = table.find_all("tr")
 
-# Print the list of Vanguard ETFs
-print(vanguard_etfs)
+    # Create an empty list to store the ETFs
+    vanguard_etfs = []
+
+    # Loop through the rows and extract the ETF ticker symbol
+    for row in rows:
+        columns = row.find_all("td")
+        if len(columns) > 0:
+            ticker = columns[0].text.strip()
+            vanguard_etfs.append(ticker)
+
+    # Print the list of Vanguard ETFs
+    print("Vanguard ETF Ticker Symbols:")
+    for ticker in vanguard_etfs:
+        print(ticker)
+
+except Exception as e:
+    print("An error occurred while processing the page:")
+    print(str(e))
 
 # Download historical price data for each of those vanguard_etfs
 portfolio_data = pd.DataFrame()

@@ -43,7 +43,7 @@ driver.get(etf_url)
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 print(soup)
 
-Find the table containing the ETF information
+# Find the table containing the ETF information
 table = soup.find_all('a')
 print(table)
 

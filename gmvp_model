@@ -43,79 +43,79 @@ driver.get(etf_url)
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 print(soup)
 
-# Find the table containing the ETF information
-# table = soup.find_all('a')
-# print(table)
+Find the table containing the ETF information
+table = soup.find_all('a')
+print(table)
 
-# # Extract the symbol values from the first column of the table
-# vanguard_etfs = []
-# for row in table.find_all('tr')[1:]:
-#     symbol = row.find_all('td')[0].text.strip()
-#     vanguard_etfs.append(symbol)
+# Extract the symbol values from the first column of the table
+vanguard_etfs = []
+for row in table.find_all('tr')[1:]:
+    symbol = row.find_all('td')[0].text.strip()
+    vanguard_etfs.append(symbol)
 
-# print(vanguard_etfs)
+print(vanguard_etfs)
 
-# # Download historical price data for each of those vanguard_etfs
-# portfolio_data = pd.DataFrame()
+# Download historical price data for each of those vanguard_etfs
+portfolio_data = pd.DataFrame()
 
-# for ticker in vanguard_etfs:
-#     data = yf.download(ticker, start=px_data_start_date, end=px_data_end_date)
-#     data['Ticker'] = ticker
-#     portfolio_data = pd.concat([portfolio_data, data])
+for ticker in vanguard_etfs:
+    data = yf.download(ticker, start=px_data_start_date, end=px_data_end_date)
+    data['Ticker'] = ticker
+    portfolio_data = pd.concat([portfolio_data, data])
 
-# # Convert historical prices into percent change from previous day
-# portfolio_data['Returns'] = portfolio_data.groupby(
-#     'Ticker')['Adj Close'].pct_change()
-# portfolio_data = portfolio_data.dropna()
+# Convert historical prices into percent change from previous day
+portfolio_data['Returns'] = portfolio_data.groupby(
+    'Ticker')['Adj Close'].pct_change()
+portfolio_data = portfolio_data.dropna()
 
-# # Download Fama French Five Factors Data, cleanse it, and convert it into decimals
-# ff_data = pd.read_csv(ff_url, skiprows=3)
-# ff_data = ff_data.rename(columns={'Unnamed: 0': 'Date'})
-# ff_data = ff_data.iloc[:-1, :]
-# ff_data['Date'] = pd.to_datetime(ff_data['Date'], format='%Y%m')
-# ff_data = ff_data.set_index('Date')
-# ff_data = ff_data / 100
+# Download Fama French Five Factors Data, cleanse it, and convert it into decimals
+ff_data = pd.read_csv(ff_url, skiprows=3)
+ff_data = ff_data.rename(columns={'Unnamed: 0': 'Date'})
+ff_data = ff_data.iloc[:-1, :]
+ff_data['Date'] = pd.to_datetime(ff_data['Date'], format='%Y%m')
+ff_data = ff_data.set_index('Date')
+ff_data = ff_data / 100
 
-# """
-# Convert percent change in historical prices for each ETF into to percent excess returns by
-# subtracting the risk free rate for the period
-# """
-# portfolio_data['Excess Returns'] = portfolio_data['Returns'] - \
-#     ff_data.loc[portfolio_data.index, 'RF'].values
+"""
+Convert percent change in historical prices for each ETF into to percent excess returns by
+subtracting the risk free rate for the period
+"""
+portfolio_data['Excess Returns'] = portfolio_data['Returns'] - \
+    ff_data.loc[portfolio_data.index, 'RF'].values
 
-# """
-# Run multivariable regression with percent excess returns for each ETF as the independent variable
-# and with the fama french five factors as the dependent variable
-# """
-# X = ff_data.loc[portfolio_data.index, ['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']]
-# Y = portfolio_data.groupby(
-#     'Ticker')['Excess Returns'].apply(list).apply(pd.Series)
-# Y.columns = range(1, 1+len(Y.columns))
-# coefficients = pd.DataFrame(index=Y.columns, columns=X.columns)
+"""
+Run multivariable regression with percent excess returns for each ETF as the independent variable
+and with the fama french five factors as the dependent variable
+"""
+X = ff_data.loc[portfolio_data.index, ['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']]
+Y = portfolio_data.groupby(
+    'Ticker')['Excess Returns'].apply(list).apply(pd.Series)
+Y.columns = range(1, 1+len(Y.columns))
+coefficients = pd.DataFrame(index=Y.columns, columns=X.columns)
 
-# for i in range(len(Y.columns)):
-#     model = sm.OLS(Y.iloc[:, i], X).fit()
-#     coefficients.iloc[i, :] = model.params
+for i in range(len(Y.columns)):
+    model = sm.OLS(Y.iloc[:, i], X).fit()
+    coefficients.iloc[i, :] = model.params
 
-# coefficients = coefficients.astype(float)
+coefficients = coefficients.astype(float)
 
-# """
-# Calculate Cost of Equity using average of each coefficient times each unique coefficient plus
-# an annualized risk free return rate
-# """
-# risk_free_rate = ff_data['RF'].mean() * 12
-# coe = (coefficients * coefficients.mean()).sum(axis=1) + risk_free_rate
+"""
+Calculate Cost of Equity using average of each coefficient times each unique coefficient plus
+an annualized risk free return rate
+"""
+risk_free_rate = ff_data['RF'].mean() * 12
+coe = (coefficients * coefficients.mean()).sum(axis=1) + risk_free_rate
 
-# """
-# Create a covariance table with excess return percentages for each ETF versus excess return
-# percentages for every other ETF
-# """
-# covariance_table = pd.DataFrame(index=vanguard_etfs, columns=vanguard_etfs)
+"""
+Create a covariance table with excess return percentages for each ETF versus excess return
+percentages for every other ETF
+"""
+covariance_table = pd.DataFrame(index=vanguard_etfs, columns=vanguard_etfs)
 
-# for i in range(len(vanguard_etfs)):
-#     for j in range(len(vanguard_etfs)):
-#         if i == j:
-#             covariance_table.iloc[i, j] = portfolio_data.loc[portfolio_data['Ticker']
-#                 == vanguard_etfs[i], 'Excess Returns'].var()
-#         else:
-#             returns_i = portfolio_data.loc[portfolio_data]
+for i in range(len(vanguard_etfs)):
+    for j in range(len(vanguard_etfs)):
+        if i == j:
+            covariance_table.iloc[i, j] = portfolio_data.loc[portfolio_data['Ticker']
+                == vanguard_etfs[i], 'Excess Returns'].var()
+        else:
+            returns_i = portfolio_data.loc[portfolio_data]

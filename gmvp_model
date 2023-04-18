@@ -9,11 +9,14 @@ import numpy as np
 import yfinance as yf
 import statsmodels.api as sm
 from scipy.optimize import minimize
+import pytz
 
 # Specify key variables
 ff_url = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip'
-px_data_start_date = '2015-01-01'
-px_data_end_date = '2022-03-30'
+px_data_start_date = pd.Timestamp('2015-01-01', tz='UTC')  # Set UTC timezone
+px_data_end_date = pd.Timestamp('2023-03-30', tz='UTC')  # Set UTC timezone
+# Set the desired timezone
+tz = pytz.timezone('US/Eastern')
 
 # Provide a list of tickers manually
 vanguard_etfs = ['VAESX', 'VAGP', 'VBAL', 'VBIAX', 'VBILX', 'VBIPX', 'VBIRX', 'VBITX', 'VBK', 'VBTLX', 'VBUXX', 'VCADX', 'VCEAX', 'VCEUX', 'VCIT', 'VCLT', 'VCMMX', 'VCORX', 'VCSH', 'VCVSX', 'VEA', 'VEGA', 'VEGI', 'VEGN', 'VEU', 'VFIDX', 'VFIIX', 'VFIJX', 'VFITX', 'VFLQX', 'VFMFX', 'VFMOX', 'VFQYX', 'VFTAX', 'VGHCX', 'VGHAX', 'VGIT', 'VGK', 'VGLT', 'VGMFX', 'VGNBX', 'VGRAX', 'VGSLX', 'VGSTX', 'VGT', 'VGTSX', 'VGWAX', 'VGZ', 'VHCIX', 'VHCOX', 'VHDSX', 'VHGEX', 'VHGIX', 'VHIAX', 'VHIGX', 'VHILX', 'VHLCX', 'VHLIX', 'VHLPX', 'VHMCX', 'VHMDX', 'VHREX', 'VHSAX', 'VHYAX', 'VHYIX', 'VIHIX', 'VIMSX', 'VINEX', 'VINIX', 'VINRX', 'VISGX', 'VITAX', 'VITLX', 'VITSX', 'VIVAX', 'VIVIX', 'VLAAX', 'VLACX', 'VLADX', 'VLGIX', 'VLISX', 'VLLVX', 'VLMCX', 'VLQTX', 'VLSCX', 'VLT', 'VLTCX', 'VMBS', 'VMGMX', 'VMIAX', 'VMNFX', 'VMNVX', 'VMO', 'VMOT', 'VMVAX', 'VNQ', 'VNQI', 'VNYTX', 'VOE', 'VOO', 'VOOG', 'VOOV', 'VOT', 'VPIAX', 'VPMSX', 'VSMAX', 'VSPSX', 'VTABX', 'VTEAX', 'VTRIX', 'VTSAX', 'VTSAX', 'VTSGX', 'VTSIX', 'VTSMX', 'VTWAX', 'VTWNX', 'VV', 'VVIAX', 'VWINX', 'VWITX', 'VWIUX']
@@ -22,13 +25,17 @@ vanguard_etfs = ['VAESX', 'VAGP', 'VBAL', 'VBIAX', 'VBILX', 'VBIPX', 'VBIRX', 'V
 portfolio_data = pd.DataFrame()
 
 for ticker in vanguard_etfs:
-    data = yf.download(ticker, start=px_data_start_date, end=px_data_end_date)
+    ticker_obj = yf.Ticker(ticker)
+    data = ticker_obj.history(start=px_data_start_date, end=px_data_end_date)
+    data.index = data.index.tz_localize('UTC').tz_convert(tz)  # Convert the index to the desired timezone
     data['Ticker'] = ticker
     portfolio_data = pd.concat([portfolio_data, data])
 
 print(portfolio_data)
 
-# Convert historical prices into percent change from previous day
+print(portfolio_data)
+
+# # Convert historical prices into percent change from previous day
 portfolio_data['Returns'] = portfolio_data.groupby(
     'Ticker')['Adj Close'].pct_change()
 portfolio_data = portfolio_data.dropna()

@@ -9,51 +9,14 @@ import numpy as np
 import yfinance as yf
 import statsmodels.api as sm
 from scipy.optimize import minimize
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
 
 # Specify key variables
-etf_url = 'https://advisors.vanguard.com/investments/etfs'
 ff_url = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip'
 px_data_start_date = '2015-01-01'
 px_data_end_date = '2022-03-30'
 
-"""
-Create a list of Vanguard ETF vanguard_etfs
-
-This section of the code scrapes the Vanguard ETF list page and extracts the ticker symbols for
-all Vanguard ETFs. The resulting list vanguard_etfs contains the ticker symbols for all Vanguard
-ETFs as of the current date. Note that this list may change over time as new ETFs are added and
-old ones are retired.
-"""
-# Configure Chrome driver options to run headless
-chrome_options = Options()
-chrome_options.add_argument('--headless')
-chrome_options.add_argument('--disable-gpu')
-
-# Create a new instance of the Chrome driver
-driver = webdriver.Chrome(options=chrome_options)
-
-# Load the webpage using the Chrome driver
-driver.get(etf_url)
-
-# Extract the HTML content using BeautifulSoup
-soup = BeautifulSoup(driver.page_source, 'html.parser')
-print(soup)
-
-# Find the table containing the ETF information
-table = soup.find_all('a')
-print(table)
-
-# Extract the symbol values from the first column of the table
-vanguard_etfs = []
-for row in table.find_all('tr')[1:]:
-    symbol = row.find_all('td')[0].text.strip()
-    vanguard_etfs.append(symbol)
-
-print(vanguard_etfs)
+# Provide a list of tickers manually
+vanguard_etfs = ['VAESX', 'VAGP', 'VBAL', 'VBIAX', 'VBILX', 'VBIPX', 'VBIRX', 'VBITX', 'VBK', 'VBTLX', 'VBUXX', 'VCADX', 'VCEAX', 'VCEUX', 'VCIT', 'VCLT', 'VCMMX', 'VCORX', 'VCSH', 'VCVSX', 'VEA', 'VEGA', 'VEGI', 'VEGN', 'VEU', 'VFIDX', 'VFIIX', 'VFIJX', 'VFITX', 'VFLQX', 'VFMFX', 'VFMOX', 'VFQYX', 'VFTAX', 'VGHCX', 'VGHAX', 'VGIT', 'VGK', 'VGLT', 'VGMFX', 'VGNBX', 'VGRAX', 'VGSLX', 'VGSTX', 'VGT', 'VGTSX', 'VGWAX', 'VGZ', 'VHCIX', 'VHCOX', 'VHDSX', 'VHGEX', 'VHGIX', 'VHIAX', 'VHIGX', 'VHILX', 'VHLCX', 'VHLIX', 'VHLPX', 'VHMCX', 'VHMDX', 'VHREX', 'VHSAX', 'VHYAX', 'VHYIX', 'VIHIX', 'VIMSX', 'VINEX', 'VINIX', 'VINRX', 'VISGX', 'VITAX', 'VITLX', 'VITSX', 'VIVAX', 'VIVIX', 'VLAAX', 'VLACX', 'VLADX', 'VLGIX', 'VLISX', 'VLLVX', 'VLMCX', 'VLQTX', 'VLSCX', 'VLT', 'VLTCX', 'VMBS', 'VMGMX', 'VMIAX', 'VMNFX', 'VMNVX', 'VMO', 'VMOT', 'VMVAX', 'VNQ', 'VNQI', 'VNYTX', 'VOE', 'VOO', 'VOOG', 'VOOV', 'VOT', 'VPIAX', 'VPMSX', 'VSMAX', 'VSPSX', 'VTABX', 'VTEAX', 'VTRIX', 'VTSAX', 'VTSAX', 'VTSGX', 'VTSIX', 'VTSMX', 'VTWAX', 'VTWNX', 'VV', 'VVIAX', 'VWINX', 'VWITX', 'VWIUX']
 
 # Download historical price data for each of those vanguard_etfs
 portfolio_data = pd.DataFrame()
@@ -62,6 +25,8 @@ for ticker in vanguard_etfs:
     data = yf.download(ticker, start=px_data_start_date, end=px_data_end_date)
     data['Ticker'] = ticker
     portfolio_data = pd.concat([portfolio_data, data])
+
+print(portfolio_data)
 
 # Convert historical prices into percent change from previous day
 portfolio_data['Returns'] = portfolio_data.groupby(

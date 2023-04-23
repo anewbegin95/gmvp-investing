@@ -19,23 +19,20 @@ px_data_end_date = pd.Timestamp('2023-03-30', tz='UTC')  # Set UTC timezone
 tz = pytz.timezone('US/Eastern')
 
 # Provide a list of tickers manually
-vanguard_etfs = ['VAESX', 'VAGP', 'VBAL', 'VBIAX', 'VBILX', 'VBIPX', 'VBIRX', 'VBITX', 'VBK', 'VBTLX', 'VBUXX', 'VCADX', 'VCEAX', 'VCEUX', 'VCIT', 'VCLT', 'VCMMX', 'VCORX', 'VCSH', 'VCVSX', 'VEA', 'VEGA', 'VEGI', 'VEGN', 'VEU', 'VFIDX', 'VFIIX', 'VFIJX', 'VFITX', 'VFLQX', 'VFMFX', 'VFMOX', 'VFQYX', 'VFTAX', 'VGHCX', 'VGHAX', 'VGIT', 'VGK', 'VGLT', 'VGMFX', 'VGNBX', 'VGRAX', 'VGSLX', 'VGSTX', 'VGT', 'VGTSX', 'VGWAX', 'VGZ', 'VHCIX', 'VHCOX', 'VHDSX', 'VHGEX', 'VHGIX', 'VHIAX', 'VHIGX', 'VHILX', 'VHLCX', 'VHLIX', 'VHLPX', 'VHMCX', 'VHMDX', 'VHREX', 'VHSAX', 'VHYAX', 'VHYIX', 'VIHIX', 'VIMSX', 'VINEX', 'VINIX', 'VINRX', 'VISGX', 'VITAX', 'VITLX', 'VITSX', 'VIVAX', 'VIVIX', 'VLAAX', 'VLACX', 'VLADX', 'VLGIX', 'VLISX', 'VLLVX', 'VLMCX', 'VLQTX', 'VLSCX', 'VLT', 'VLTCX', 'VMBS', 'VMGMX', 'VMIAX', 'VMNFX', 'VMNVX', 'VMO', 'VMOT', 'VMVAX', 'VNQ', 'VNQI', 'VNYTX', 'VOE', 'VOO', 'VOOG', 'VOOV', 'VOT', 'VPIAX', 'VPMSX', 'VSMAX', 'VSPSX', 'VTABX', 'VTEAX', 'VTRIX', 'VTSAX', 'VTSAX', 'VTSGX', 'VTSIX', 'VTSMX', 'VTWAX', 'VTWNX', 'VV', 'VVIAX', 'VWINX', 'VWITX', 'VWIUX']
+vanguard_etfs = ['VAESX', 'VBAL', 'VBIAX', 'VBILX', 'VBIPX', 'VBIRX', 'VBITX', 'VBK', 'VBTLX', 'VCADX', 'VCEAX', 'VCIT', 'VCLT', 'VCORX', 'VCSH', 'VCVSX', 'VEA', 'VEGA', 'VEGI', 'VEGN', 'VEU', 'VFIDX', 'VFIIX', 'VFIJX', 'VFITX', 'VFMFX', 'VFTAX', 'VGHCX', 'VGHAX', 'VGIT', 'VGK', 'VGLT', 'VGRAX', 'VGSLX', 'VGSTX', 'VGT', 'VGTSX', 'VGWAX', 'VGZ', 'VHCIX', 'VHCOX', 'VHGEX', 'VHIAX', 'VHILX', 'VHYAX', 'VIHIX', 'VIMSX', 'VINEX', 'VINIX', 'VINRX', 'VISGX', 'VITAX', 'VITLX', 'VITSX', 'VIVAX', 'VIVIX', 'VLAAX', 'VLACX', 'VLGIX', 'VLISX', 'VLSCX', 'VLT', 'VLTCX', 'VMBS', 'VMGMX', 'VMIAX', 'VMNFX', 'VMNVX', 'VMO', 'VMOT', 'VMVAX', 'VNQ', 'VNQI', 'VNYTX', 'VOE', 'VOO', 'VOOG', 'VOOV', 'VOT', 'VPMSX', 'VSMAX', 'VSPSX', 'VTABX', 'VTEAX', 'VTRIX', 'VTSAX', 'VTSAX', 'VTSIX', 'VTSMX', 'VTWAX', 'VTWNX', 'VV', 'VVIAX', 'VWINX', 'VWITX', 'VWIUX']
 
 # Download historical price data for each of those vanguard_etfs
 portfolio_data = pd.DataFrame()
 
 for ticker in vanguard_etfs:
     ticker_obj = yf.Ticker(ticker)
-    data = ticker_obj.history(start=px_data_start_date, end=px_data_end_date)
-    data.index = data.index.tz_localize('UTC').tz_convert(tz)  # Convert the index to the desired timezone
+    data = ticker_obj.history(start=px_data_start_date, end=px_data_end_date, interval="1d")
     data['Ticker'] = ticker
     portfolio_data = pd.concat([portfolio_data, data])
 
 print(portfolio_data)
 
-print(portfolio_data)
-
-# # Convert historical prices into percent change from previous day
+# Convert historical prices into percent change from previous day
 portfolio_data['Returns'] = portfolio_data.groupby(
     'Ticker')['Adj Close'].pct_change()
 portfolio_data = portfolio_data.dropna()

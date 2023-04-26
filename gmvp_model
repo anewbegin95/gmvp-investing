@@ -28,14 +28,19 @@ for ticker in vanguard_etfs:
     ticker_obj = yf.Ticker(ticker)
     data = ticker_obj.history(start=px_data_start_date, end=px_data_end_date, interval="1d")
     data['Ticker'] = ticker
+    data = data.resample('MS').first()  # Resample data to first day of each month
     portfolio_data = pd.concat([portfolio_data, data])
 
 # Convert historical prices into percent change from previous day
 portfolio_data = portfolio_data.reset_index()
+portfolio_data['Date'] = pd.to_datetime(portfolio_data['Date']).dt.date
 portfolio_data = portfolio_data.rename(columns={'Close': 'Adj Close'})
-portfolio_data['Returns'] = portfolio_data.groupby(
+portfolio_data['Pct Return'] = portfolio_data.groupby(
     'Ticker')['Adj Close'].pct_change()
 portfolio_data = portfolio_data.dropna()
+
+print(portfolio_data.dtypes)
+print(portfolio_data.head())
 
 # Download Fama French Five Factors Data, cleanse it, and convert it into decimals
 try:
@@ -47,6 +52,10 @@ ff_data['Date'] = pd.to_datetime(ff_data['Date'], format='%Y%m', errors='coerce'
 ff_data = ff_data.set_index('Date')
 ff_data = ff_data.apply(pd.to_numeric, errors='coerce')
 
+print(ff_data.head())
+
+# Merge portfolio_data and ff_data on date index
+merged_data = pd.merge(portfolio_data, ff_data, left_index=True, right_index=True, how='inner')
 
 """
 Convert percent change in historical prices for each ETF into to percent excess returns by
